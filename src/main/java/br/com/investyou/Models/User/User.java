@@ -6,6 +6,7 @@ import br.com.investyou.Models.Portfolio.Portfolio;
 import jakarta.persistence.*;
 
 import lombok.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 
@@ -32,5 +33,10 @@ public class User {
     // One user -> one portfolio (assumption: each user has one portfolio)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Portfolio portfolio;
+
+    public boolean comparePassword(String password) {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        return encoder.matches(password, this.password);
+    }
 
 }
