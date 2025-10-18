@@ -1,6 +1,7 @@
 package br.com.investyou.Infra.Security;
 
 import br.com.investyou.Infra.Security.dto.TokenDataDTO;
+import br.com.investyou.Models.User.User;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
@@ -19,46 +20,37 @@ public class TokenService {
     @Value("${api.security.token.secret}")
     private String secret;
 
-    @Value("${api.security.token.subject}")
-    private String subject;
+    @Value("${api.security.token.issuer}")
+    private String issuer;
 
-    public String generate(TokenDataDTO data) {
+    public String generateToken(User usuario) {
         try {
+            Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.create()
-                    .withIssuer(subject)
-                    .withSubject(data.email())
-                    .withClaim("id", data.id())
-                    .withClaim("name", data.name())
-                    .withClaim("admin", data.admin())
-                    .withExpiresAt(expiration())
-                    .sign(getAlgorithm());
-        } catch (JWTCreationException e) {
-            throw new RuntimeException(e);
+                    .withIssuer(issuer)
+                    .withSubject(usuario.getEmail())
+                    .withExpiresAt(expirationDate())
+                    .sign(algorithm);
+        } catch (JWTCreationException e){
+            throw new RuntimeException("Erro ao gerar o Token JWT! ", e);
         }
     }
 
-    public String getSubject(String jwt) {
+    public String getSubject(String tokenJWT) {
         try {
-            return JWT.require(getAlgorithm())
-                    .withIssuer(subject)
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+            return JWT.require(algorithm)
+                    .withIssuer(issuer)
                     .build()
-                    .verify(jwt)
+                    .verify(tokenJWT)
                     .getSubject();
-        } catch (JWTVerificationException e) {
-            throw new RuntimeException(e);
+
+        } catch (JWTVerificationException e){
+            throw new RuntimeException("Token JWT inválido ou expirado! ", e);
         }
     }
 
-    private Algorithm getAlgorithm() {
-        return  Algorithm.HMAC256(secret);
+    private Instant expirationDate() {
+        return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
     }
-
-    private Instant expiration() {
-        return LocalDateTime.now().plusDays(30).toInstant(ZoneOffset.of("-03:00"));
-    }
-
-    public DecodedJWT decode(String token) {
-        return JWT.decode(token.replace("Bearer ", ""));
-    }
-
 }

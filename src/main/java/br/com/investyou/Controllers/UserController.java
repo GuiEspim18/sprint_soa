@@ -8,6 +8,7 @@ import br.com.investyou.Models.User.dto.UserListDto;
 import br.com.investyou.Models.User.dto.UserUpdateDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -19,6 +20,9 @@ import java.util.stream.Collectors;
 public class UserController {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping
     public List<UserListDto> list() {
@@ -33,7 +37,7 @@ public class UserController {
         User u = new User();
         u.setName(dto.name());
         u.setEmail(dto.email());
-        u.setPassword(dto.password());
+        u.setPassword(passwordEncoder.encode(dto.password()));
         userRepository.save(u);
         UserListDto out = new UserListDto(u.getId(), u.getName(), u.getEmail());
         return ResponseEntity.created(URI.create("/api/users/" + u.getId())).body(out);
